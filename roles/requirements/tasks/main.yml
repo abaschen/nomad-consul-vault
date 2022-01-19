@@ -1,0 +1,110 @@
+- name: Disable SELinux
+  ansible.posix.selinux:
+    state: disabled
+
+- name: load br_netfilter kernel module
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: add br_netfilter to /etc/modules-load.d
+  lineinfile:
+    path: /etc/modules-load.d/podman-net.conf
+    regexp: '^br_netfilter'
+    line: br_netfilter
+    create: true
+
+- name: set bridge bridge-nf-call-ip6tables settings
+  sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    reload: yes
+    state: present
+  with_items:
+  - net.bridge.bridge-nf-call-arptables
+  - net.bridge.bridge-nf-call-ip6tables
+  - net.bridge.bridge-nf-call-iptables
+  - net.ipv4.ip_forward
+
+- name: Add IP address of all hosts to all hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_ssh_host }} {{item}}"
+    state: present
+  when: hostvars[item].ansible_ssh_host is defined
+  with_items: "{{ groups.all }}"
+
+- name: add hostname to /etc/hosts
+  vars:
+    comment: '# added by ansible'
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "127[.]0[.]0[.]1.*"
+    line: "127.0.0.1 localhost.localdomain localhost {{ ansible_hostname }} {{ comment }}"
+    state: present
+    owner: root
+    group: root
+    mode: '0644'
+- name: disable overlay redirection
+  copy:
+    dest: /etc/modprobe.d/disable-overlay-redirect-dir.conf
+    content: "options overlay metacopy=off redirect_dir=off"
+
+#- name: Reload module
+#  shell: modprobe -r overlay && modprobe overlay
+
+- name: Create podman userspace config
+  file:
+    path: "~/.config/containers"
+    state: directory
+  become: yes
+  become_user: nomad
+
+- name: Copy podman containers.conf
+  become: true
+  become_user: nomad
+  copy:
+    src: "containers.conf"
+    dest: "~/.config/containers"
+
+- name: Copy podman service files
+  copy:
+    src: "podman.service"
+    dest: "/usr/lib/systemd/user/"
+
+- name: Copy podman service files
+  copy:
+    src: "podman.socket"
+    dest: "/usr/lib/systemd/user/"
+
+- name: Register systemd socket
+  become: yes
+  become_user: nomad
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: restarted
+    daemon_reload: true
+    scope: user
+  with_items:
+    - podman.socket
+    - podman.service
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/990"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/990/bus"
+
+- name: Register systemd service
+  systemd:
+    name: "podman.service"
+    enabled: true
+    state: restarted
+    daemon_reload: true
+
+- name: Add a default remote connection for nomad socket
+  shell: podman-remote system connection add default /run/user/990/podman/podman.sock
+
+- name: Unconditionally reboot the machine with all defaults
+  reboot: {}

@@ -1,0 +1,84 @@
+- name: Ensure group "hashi" exists
+  group:
+    name: hashi
+    state: present
+    gid: 2000
+
+- name: Add {{ name }} users
+  user:
+    name: "{{ name }}"
+    state: present
+    system: true
+    shell: "/usr/bin/false"
+    home: "/etc/{{ name }}.d"
+    groups:
+    - wheel
+    - hashi
+
+- name: Install {{ name }}
+  package:
+    name: "{{ name }}"
+    state: present
+
+- name: Register systemd service
+  systemd:
+    name: "{{ name }}"
+    enabled: true
+    state: stopped
+- name: Ensure directory exists and has proper ownership
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    follow: false
+  with_items:
+  - "{{ configdir }}/{{ name }}.d"
+  - "{{ datadirs[name] | default(datadir) }}/{{ name }}"
+- name: Delete old directory if any
+  file:
+    path: "/etc/{{ name }}.d"
+    state: absent
+
+- name: Create a symbolic link
+  file:
+    src: "{{ configdir }}/{{ name }}.d"
+    dest: /etc/{{ name }}.d
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    state: link
+    follow: false
+
+- name: Product specific tasks
+  include_tasks: "{{ name }}.yml"
+
+- name: Install config file
+  template:
+    src: "./templates/{{ name }}.hcl.j2"
+    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.hcl"
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    mode: '0644'
+
+- name: Install service file
+  template:
+    src: "./templates/{{ name }}.service.j2"
+    dest: "/etc/systemd/system/{{ name }}.service"
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    mode: '0644'
+
+- name: Register systemd service
+  systemd:
+    name: "{{ name }}"
+    enabled: true
+    daemon_reload: true
+    state: started
+
+- name: Allow {{ name }} port
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+  loop: "{{ lookup('vars', name)['port_list'] }}"

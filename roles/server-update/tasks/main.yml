@@ -1,0 +1,61 @@
+- name: Display all variables/facts known for a host
+  ansible.builtin.debug:
+    var: hostvars[inventory_hostname]
+    verbosity: 4
+
+### APT
+- name: Add Nomad Apt signing key
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: delete old repo
+  file:
+    state: absent
+    path:  /etc/apt/sources.list.d/apt_releases_hashicorp_com.list
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Add specified repository into sources list
+  ansible.builtin.apt_repository:
+    repo: deb https://apt.releases.hashicorp.com bionic main
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: APT update cache as separate step
+  apt:
+    update_cache: yes
+  when: ansible_facts.pkg_mgr == "apt"
+  failed_when: false
+
+- name: APT upgrade packages
+  apt:
+    upgrade: dist
+  when: ansible_facts.pkg_mgr == "apt"
+- name: APT Remove useless packages from the cache
+  apt:
+    autoclean: yes
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: APT Remove dependencies that are no longer required
+  apt:
+    autoremove: yes
+  when: ansible_facts.pkg_mgr == "apt"
+
+### YUM
+- name: YUM Add specified repository into sources list
+  yum_repository:
+    name: hashicorp
+    description: Hashicorp YUM Repo
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgcheck: yes
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+  when: ansible_facts.os_family == "RedHat"
+
+- name: YUM update
+  yum:
+    update_cache: yes
+    name: "*"
+    state: latest
+  when: ansible_facts.os_family == "RedHat"
+

@@ -1,0 +1,2 @@
+---
+token_dir_output: "{{ playbook_dir }}/.consul/tokens"

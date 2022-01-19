@@ -1,0 +1,49 @@
+# Full configuration options can be found at https://www.vaultproject.io/docs/configuration
+
+ui = {{ "true" if server else "false" }}
+api_addr = "http://ix:{{ vault.ports.http }}"
+#mlock = true
+#disable_mlock = true
+
+#storage "file" {
+#  path = "/mnt/tank/nomad/vault/data"
+#}
+
+storage "consul" {
+  address = "ix:{{ consul.ports.https }}"
+  path    = "vault/"
+  token = "{{ consul_vault_token }}"
+  scheme = "https"
+  tls_ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
+  tls_cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"
+  tls_key_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0-key.pem"
+  tls_skip_verify = "true"
+}
+
+# HTTP listener
+listener "tcp" {
+  address = "0.0.0.0:{{ vault.ports.http }}"
+  tls_disable = 1
+}
+
+# HTTPS listener
+#listener "tcp" {
+#  address       = "0.0.0.0:8200"
+#  tls_cert_file = "/mnt/tank/nomad/vault/tls/vault-tls.crt"
+#  tls_key_file  = "/mnt/tank/nomad/vault/tls/vault-tls.key"
+#}
+
+# Example AWS KMS auto unseal
+#seal "awskms" {
+#  region = "us-east-1"
+#  kms_key_id = "REPLACE-ME"
+#}
+
+# Example HSM auto unseal
+#seal "pkcs11" {
+#  lib            = "/usr/vault/lib/libCryptoki2_64.so"
+#  slot           = "0"
+#  pin            = "AAAA-BBBB-CCCC-DDDD"
+#  key_label      = "vault-hsm-key"
+#  hmac_key_label = "vault-hsm-hmac-key"
+#}

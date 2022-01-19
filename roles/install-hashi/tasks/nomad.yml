@@ -1,0 +1,54 @@
+- name: Create temporary build directory
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: build
+  register: tmpdir
+- name: building podman driver
+  git:
+    repo: https://github.com/hashicorp/nomad-driver-podman.git
+    dest: "{{ tmpdir.path }}"
+
+- name: Install build requirements
+  package:
+    name:
+      - golang
+    state: latest
+
+- name: Build podman nomad driver
+  shell: ./build.sh
+  args:
+    chdir: "{{ tmpdir.path }}"
+
+- name: Ensure plugins directory exists and has proper ownership
+  file:
+    path: "{{ datadirs[name] | default(datadir) }}/nomad/plugins"
+    state: directory
+    owner: "nomad"
+    group: "nomad"
+    follow: false
+
+- name: copy driver to nomad plugins dir
+  copy:
+    src: "{{ tmpdir.path }}/nomad-driver-podman"
+    dest: "{{ datadirs[name] | default(datadir) }}/nomad/plugins"
+    remote_src: true
+    owner: "nomad"
+    group: "nomad"
+    mode: "u+rwx"
+
+- name: Remove temp folder
+  file:
+    path: "{{ tmpdir.path }}"
+    state: absent
+  when: tmpdir.path is defined
+
+- name: Add subids to system files
+  lineinfile:
+    dest: "/etc/{{ item }}"
+    regexp: "^nomad:(\\d+):(\\d+)$"
+    line: "nomad:100000:65536"
+    create: true
+    state: present
+  with_items:
+  - subuid
+  - subgid

@@ -1,0 +1,25 @@
+- name: install base packages
+  package:
+    name:
+      - podman
+      - udica
+      - bind-utils
+    state: latest
+- name: add directory for CoreDNS configuration
+  file:
+    path: /etc/coredns
+    state: directory
+    mode: '0755'
+
+- name: create /etc/udica for custom SELinux policies
+  file:
+    path: /etc/udica
+    state: directory
+    mode: '0755'
+
+- name: create coredns SELinux policy file
+  copy:
+    src: files/coredns.cil
+    dest: /etc/udica/coredns.cil
+  notify:
+    - load coredns SELinux module

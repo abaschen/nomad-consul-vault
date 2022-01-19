@@ -1,0 +1,15 @@
+[Unit]
+Description=CoreDNS private DNS in a container
+
+[Service]
+Restart=on-failure
+ExecStartPre=/usr/bin/rm -f /%t/%n-pid /%t/%n-cid
+ExecStartPre=-/usr/bin/podman rm -f coredns
+ExecStart=/usr/bin/podman run --name coredns --read-only --security-opt label=type:coredns.process -p {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:53:53/tcp -p {{ ansible_eth1.ipv4.address }}:53:53/udp -v /etc/coredns:/etc/coredns:ro --cap-drop ALL --cap-add NET_BIND_SERVICE --conmon-pidfile /%t/%n-pid --cidfile /%t/%n-cid -d coredns/coredns:latest -conf /etc/coredns/Corefile
+ExecStop=/usr/bin/podman stop coredns
+KillMode=none
+Type=forking
+PIDFile=/%t/%n-pid
+
+[Install]
+WantedBy=multi-user.target

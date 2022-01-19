@@ -1,0 +1,10 @@
+- name: Generate key {{ key_name }} with cmd
+  shell: "{{ cmd }}"
+  register: key_cmd
+
+- name: Write key {{ key_name }} to file
+  copy:
+    dest: "{{ key_folder }}/{{ key_name }}"
+    content: "{{ key_cmd.stdout }}"
+  delegate_to: localhost
+  become: no

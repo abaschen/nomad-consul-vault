@@ -1,0 +1,25 @@
+# This should succeed regardless of seal state
+- name: "Policy {{ acl_name }} exists?"
+  # Attempt to help with long lines > 160 issues
+  shell:
+    cmd: consul acl policy list -token={{ consul_bootstrap_token }} -format=json | jq -r '.[] | select(.Name == "{{ acl_name }}") | .ID'
+  register: check_result
+
+- debug:
+    var: check_result
+- set_fact:
+    acl_exists: "{{check_result.rc == 0 and check_result.stdout != '' }}"
+    #acl_exists: "{{check_result.stdout != 'false'}}"
+- set_fact:
+    tern: "{{ acl_exists | ternary('update', 'create') }}"
+    acl: "{{lookup('file', acl_name +'-policy.hcl') | trim | regex_replace('[\\r\\n]+','\n')}}"
+- debug:
+    var: tern
+- debug:
+    var: acl_exists
+- name: "Create ACL {{ acl_name }} policy"
+  shell:
+    cmd: "consul acl policy {{ acl_exists | ternary('update', 'create') }} -name {{ acl_name }} -token='{{ consul_bootstrap_token }}' -rules -"
+    stdin: "{{acl}}"
+  environment:
+    CONSUL_HTTP_TOKEN: consul_bootstrap_token

@@ -1,0 +1,25 @@
+---
+- name: restart consul
+  systemd:
+    name: consul
+    state: restarted
+
+- name: restart nomad
+  systemd:
+    name: nomad
+    state: restarted
+
+- name: restart podman
+  systemd:
+    name: podman
+    state: restarted
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+
+# Handler showing how to clean yum metadata cache
+- name: yum-clean-metadata
+  command: yum clean metadata
+  args:
+    warn: no

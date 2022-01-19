@@ -1,0 +1,46 @@
+{{ DOMAIN }} {
+    hosts /etc/coredns/internal.hosts
+    errors
+    log . {
+        class denial error
+    }
+    forward . 10.1.1.14 {
+        policy sequential
+        health_check 5s
+    }
+}
+
+1.1.10.in-addr.arpa {
+    errors
+    log . {
+        class denial error
+    }
+    forward . {$AUTHORITATIVE_DNS} {
+        policy sequential
+        health_check 5s
+    }
+}
+
+2.7.f.0.5.e.b.0.b.8.0.1.0.0.2.ip6.arpa {
+    errors
+    log . {
+        class denial error
+    }
+    forward . {$AUTHORITATIVE_DNS} {
+        policy sequential
+        health_check 5s
+    }
+}
+
+. {
+    cache
+    errors
+    log . {
+        class denial error
+    }
+    forward . tls://9.9.9.9 tls://149.112.112.112 {
+        tls_servername dns.quad9.net
+        policy sequential
+        health_check 5s
+    }
+}

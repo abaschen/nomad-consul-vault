@@ -1,0 +1,29 @@
+- name: Wait 5s for vault to start properly
+  wait_for:
+    timeout: 5
+  delegate_to: localhost
+  become: no
+
+- shell: vault secrets list -format=json
+  register: vault_secrets
+  environment:
+      VAULT_TOKEN: "{{ vault_root_key }}"
+      VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+
+- name: Enable KV store
+  shell: "vault secrets enable --path={{ item.path }} {{ item.cmd }}"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  when: vault_secrets.stdout | from_json | json_query( item.path +'.type' ) != item.type
+  with_items:
+  - { cmd: "pki", path: 'pki/', type: 'pki'}
+  - {cmd: "kv-v2", path: 'secrets/', type: 'kv'}
+
+- name: Tune vault
+  shell: "vault secrets tune {{ item }}"
+  environment:
+      VAULT_TOKEN: "{{ vault_root_key }}"
+      VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  with_items:
+  - "-max-lease-ttl=8760h pki"

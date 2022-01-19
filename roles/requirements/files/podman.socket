@@ -1,0 +1,12 @@
+[Unit]
+Description=Podman API Socket
+Documentation=man:podman-system-service(1)
+
+[Socket]
+ListenStream=%t/podman/podman.sock
+SocketMode=0660
+SocketUser=nomad
+SocketGroup=nomad
+
+[Install]
+WantedBy=sockets.target

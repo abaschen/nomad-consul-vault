@@ -1,0 +1,44 @@
+- name: Create unseal directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  delegate_to: localhost
+  become: no
+  with_items:
+  - "{{ playbook_dir }}/.vault"
+  - "{{ playbook_dir }}/.vault/unsealKey"
+
+
+- include_role:
+    name: read-or-get-key
+  vars:
+    key_name: vault_init_results
+    key_folder: "{{playbook_dir}}/.vault"
+    cmd: "vault operator init -key-shares=5 -key-threshold=3 -format json"
+- debug:
+    var: vault_init_results
+- name: Parse output of vault init
+  set_fact:
+    vault_init_parsed: "{{ vault_init_results }}"
+
+- name: Write unseal keys to files
+  copy:
+    dest: "{{ playbook_dir }}/.vault/unsealKey/unseal_key_{{ item.0 }}"
+    content: "{{ item.1 }}"
+    force: no
+
+  with_indexed_items: "{{ vault_init_parsed.unseal_keys_hex }}"
+  delegate_to: localhost
+  become: no
+
+- name: Write root token to file
+  copy:
+    content: "{{ vault_init_parsed.root_token }}"
+    dest: "{{ playbook_dir }}/.vault/vault_root_key"
+    force: no
+  delegate_to: localhost
+  become: no
+
+- name: set vault root key
+  set_fact:
+    vault_root_key: "{{ vault_init_parsed.root_token }}"

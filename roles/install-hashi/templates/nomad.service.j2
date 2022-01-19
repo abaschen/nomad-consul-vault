@@ -1,0 +1,30 @@
+[Unit]
+Description=nomad agent
+Requires=network-online.target
+After=network-online.target
+Documentation=https://www.nomadproject.io/docs/agent/options
+# When using Nomad with Consul it is not necessary to start Consul first. These
+# lines start Consul before Nomad as an optimization to avoid Nomad logging
+# that Consul is unavailable at startup.
+Wants=consul.service
+Wants=vault.service
+After=consul.service
+After=vault.service
+
+[Service]
+Restart=on-failure
+ExecStart=/usr/bin/nomad agent -config=/etc/nomad.d/nomad.hcl
+User=nomad
+Group=nomad
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+LimitNOFILE=65535
+RestartSec=2
+StartLimitBurst=3
+StartLimitInterval=10
+TasksMax=infinity
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target

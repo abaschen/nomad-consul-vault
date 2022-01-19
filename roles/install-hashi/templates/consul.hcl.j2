@@ -1,0 +1,74 @@
+node_name= "{{ ansible_hostname }}"
+{% if server %}
+ui= true
+addresses {
+    http= "0.0.0.0"
+    dns= "0.0.0.0"
+}
+{% endif %}
+
+data_dir= "{{ datadirs[name] | default(datadir) }}/consul"
+domain= "{{ domain }}"
+datacenter= "{{ datacenter }}"
+bind_addr= "0.0.0.0"
+advertise_addr= "{{ hostvars.ansible_hostname }}"
+ports{
+    #http= {{ consul.ports.http }}
+    https= {{ consul.ports.https }}
+    dns= {{ consul.ports.dns }}
+    grpc= {{ consul.ports.grpc }}
+}
+
+acl = {
+    enabled = true
+    default_policy = "deny"
+    enable_token_persistence = true
+{% if consul_node_token is defined %}
+    tokens = {
+        agent= "{{ consul_node_token }}"
+    }
+{% endif %}
+
+}
+server= {{ "true" if server else "false" }}
+retry_join=[{% for host in groups.masters %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+rejoin_after_leave=true
+
+{% if server %}
+bootstrap_expect={{ groups.masters | length }}
+connect { enabled=true }
+{% endif %}
+
+start_join= [{% for host in groups.masters %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+{% if consul_gossip_key is defined %}
+encrypt="{{ consul_gossip_key }}"
+{% endif %}
+
+telemetry {
+  disable_compat_1.9 = true
+}
+
+ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
+cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"
+key_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0-key.pem"
+verify_incoming = false
+verify_outgoing = false
+verify_server_hostname = false
+
+{% if consul.autoconfig is defined %}
+auto_config {
+    authorization {
+        enabled= true
+        static {
+            oidc_discovery_url= "http://vault-server:8200/v1/identity/oidc"
+            bound_issuer= "http://vault-server:8200/v1/identity/oidc"
+            bound_audiences = ["consul-cluster-dc1"]
+            claim_mappings = {
+                "/consul/hostname" = "node_name"
+            }
+            claim_assertions= ["value.node_name == \"${node}\""]
+        }
+    }
+}
+{% endif %}

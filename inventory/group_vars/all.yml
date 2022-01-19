@@ -1,0 +1,43 @@
+ansible_ssh_private_key_file: ~/.ssh/id
+bindir: "/usr/bin"
+configdir: "/mnt/tank/config"
+datadir: "/mnt/tank/data"
+datadirs:
+  nomad: "/var/opt"
+
+domain: server
+datacenter: dc1
+
+consul:
+  # Check this blog post before enable this variable
+  # https://www.hashicorp.com/blog/protecting-consul-from-rce-risk-in-specific-configurations
+  enable_script_check: false
+
+  # Services #
+  agent_services: false
+  service_sanity_healthcheck: true  # Perform healthcheck on services priot to registration
+  ports:
+    http: 8500
+    https: 8501
+    dns: 8600
+    grpc: 8502
+  port_list:
+  - 8500/tcp
+  - 8600/tcp
+  - 8502/tcp
+
+vault:
+  ports:
+    http: 8200
+  port_list:
+  - 8200/tcp
+nomad:
+  ports:
+    http: 4646
+    rpc: 4647
+    gossip: 4648
+  port_list:
+  - 4646/tcp
+  - 4647/tcp
+  - 4648/tcp
+  - 4648/udp

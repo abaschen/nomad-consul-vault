@@ -1,0 +1,24 @@
+- name: Ensure key folder exists
+  file:
+    path: "{{ key_folder }}"
+    state: directory
+  delegate_to: localhost
+  become: no
+- name: Check that the somefile.conf exists
+  stat:
+    path: "{{ key_folder }}/{{ key_name }}"
+  register: stat_result
+  delegate_to: localhost
+  become: no
+
+- name: "Key {{ key_name }} doesn't exist, generating one"
+  include_tasks: "./write-key.yml"
+  when: not stat_result.stat.exists
+
+- set_fact:
+    "{{ k.name }}": "{{ k.val }}"
+  no_log: true
+  with_items:
+    - { name: "{{ key_name }}", val: "{{ lookup('file', key_folder + '/' + key_name) }}" }
+  loop_control:
+    loop_var: k

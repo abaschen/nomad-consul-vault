@@ -1,0 +1,2 @@
+- name: load coredns SELinux module
+  shell: 'semodule -i /etc/udica/coredns.cil /usr/share/udica/templates/{base_container.cil,net_container.cil}'

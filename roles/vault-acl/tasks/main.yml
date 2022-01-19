@@ -1,0 +1,57 @@
+---
+- name: Wait 30s for vault to start properly
+  wait_for:
+    timeout: 60
+  delegate_to: localhost
+  become: no
+- name: "Create Policy nomad-server policy"
+  shell:
+    cmd: "vault policy read nomad-server"
+  register: res
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  failed_when: "'Error reading policy named nomad-server' in res.stderr or 'local node not active but active cluster node not found' in res.stderr"
+
+- name: "Create Policy nomad-server policy"
+  shell:
+    cmd: "vault policy write nomad-server -"
+    stdin: "{{ lookup('file', 'nomad-server-policy.hcl') }}"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  when: res.rc != 0
+
+- name: "Create Policy nomad-server policy"
+  shell:
+    cmd: "vault read /auth/token/roles/nomad-cluster"
+  register: res
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  failed_when: "'local node not active but active cluster node not found' in res.stderr"
+
+- name: "Write role nomad-cluster"
+  shell:
+    cmd: "vault write /auth/token/roles/nomad-cluster disallowed_policies='nomad-server' token_explicit_max_ttl=0 name='nomad-cluster' orphan=true token_period=259200 renewable=true"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+  when: res.rc != 0
+
+- name: Read or create keys
+  include_role:
+    name: read-or-get-key
+  vars:
+    key_name: "{{ item.name }}"
+    key_folder: "{{ playbook_dir }}/.vault/policies"
+    cmd: "{{ item.getter }}"
+  with_items:
+    - { name: vault_nomad_token, getter: "vault token create -policy nomad-server -period 72h -orphan -token={{ vault_root_key }} -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
+
+- name: Setup consul again to refresh config file
+  include_role:
+    name: install-hashi
+  vars:
+    name: vault
+    port_list: "{{ vault.port_list }}"

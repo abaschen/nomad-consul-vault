@@ -1,0 +1,48 @@
+all:
+  children:
+    xaviers:
+      hosts:
+        xavier-01:
+          ansible_ssh_host: 192.168.1.149
+
+    nanos:
+      hosts:
+        nano-01:
+          ansible_ssh_host: 192.168.1.151
+        nano-02:
+          ansible_ssh_host: 192.168.1.152
+        nano-03:
+          ansible_ssh_host: 192.168.1.153
+
+    masters:
+      hosts:
+        ix:
+          ansible_ssh_host: 192.168.1.201
+      vars:
+        volumes:
+          - name: "config"
+            path: "/mnt/tank/storage/config"
+          - name: "certs"
+            path: "/mnt/tank/storage/config/certs"
+          - name: "videos"
+            path: "/mnt/tank/storage/media/videos"
+          - name: "files"
+            path: "/mnt/tank/storage/files"
+          - name: "download"
+            path: "/mnt/tank/storage/download"
+
+    workers:
+      children:
+        xaviers:
+        nanos:
+    cluster:
+      children:
+        xaviers:
+        nanos:
+    gpu_workers:
+      children:
+        xaviers:
+        nanos:
+      vars:
+        nomad:
+          runtime: nvidia
