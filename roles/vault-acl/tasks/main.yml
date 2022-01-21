@@ -7,10 +7,7 @@
 
 - name: "Create Policy nomad-server policy"
   include_tasks: ./write-policy.yml
-  environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
-    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  args:
+  vars:
     policy_name: "{{item}}"
   with_items:
   - nomad-server
