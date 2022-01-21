@@ -23,3 +23,11 @@
     stdin: "{{acl}}"
   environment:
     CONSUL_HTTP_TOKEN: consul_bootstrap_token
+
+- name: Read or create keys
+  include_role:
+    name: read-or-get-key
+  vars:
+    key_name: "consul_{{ acl_name }}_token"
+    key_folder: "{{ playbook_dir }}/.consul/policies"
+    cmd: "consul acl token create -description '{{ acl_descr }}' -token='{{ consul_bootstrap_token }}' -policy-name {{ acl_name }} -format=json | jq -r '.SecretID'"

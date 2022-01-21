@@ -1,9 +1,16 @@
+- name: Get vault status
+  shell: vault status -format=json
+  register: vault_status
+  environment:
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+
 - name: Reading unseal key contents
   command: cat {{item}}
   register: unseal_keys
   with_fileglob: "{{ playbook_dir }}/.vault/unsealKey/*"
   delegate_to: localhost
   become: no
+  when: vault_status.stdout | from_json | json_query('sealed')
 
 - name: Unseal vault with unseal keys
   shell: |
@@ -11,4 +18,6 @@
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   with_items: "{{unseal_keys.results}}"
+  when: vault_status.stdout | from_json | json_query('sealed')
+
 

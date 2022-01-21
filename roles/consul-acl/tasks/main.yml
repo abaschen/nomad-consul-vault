@@ -8,23 +8,13 @@
 - name: Create policies
   include_tasks: write-policies.yml
   vars:
-    acl_name: "{{ item }}"
+    acl_name: "{{ item.name }}"
+    acl_desc: "{{ item.descr }}"
   with_items:
-  - node
-  - nomad-service
-  - vault-service
-
-- name: Read or create keys
-  include_role:
-    name: read-or-get-key
-  vars:
-    key_name: "{{ item.name }}"
-    key_folder: "{{ playbook_dir }}/.consul/policies"
-    cmd: "{{ item.getter }}"
-  with_items:
-    - { name: consul_node_token, getter: "consul acl token create -description 'Node Token' -token='{{ consul_bootstrap_token }}' -policy-name node -format=json | jq -r '.SecretID'" }
-    - { name: consul_vault_token, getter: "consul acl token create -description 'Vault Service Token' -token='{{ consul_bootstrap_token }}' -policy-name vault-service -format=json | jq -r '.SecretID'" }
-    - { name: consul_nomad_token, getter: "consul acl token create -description 'Nomad Service Token' -token='{{ consul_bootstrap_token }}' -policy-name nomad-service -format=json | jq -r '.SecretID'" }
+  - { name: "node", descr:  "Node Token" }
+  - { name: "nomad", descr: "Nomad Service Token" }
+  - { name: "vault", descr: "Vault Service Token" }
+  - { name: "traefik", descr: "Traefik Catalog Service Token" }
 
 - name: Setup consul again to refresh config file
   include_role:

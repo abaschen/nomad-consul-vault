@@ -55,6 +55,14 @@
 
 #- name: Reload module
 #  shell: modprobe -r overlay && modprobe overlay
+- name: Fix delegate for cgroups
+  copy:
+    src: "fix-delegate.sh"
+    dest: "/root/"
+- name: Copy delegate fix service
+  copy:
+    src: "fix-delegate.service"
+    dest: "/etc/systemd/system/"
 
 - name: Create podman userspace config
   file:
@@ -70,17 +78,16 @@
     src: "containers.conf"
     dest: "~/.config/containers"
 
-- name: Copy podman service files
+- name: Copy podman service files for socket activation
   copy:
-    src: "podman.service"
+    src: "{{ item }}"
     dest: "/usr/lib/systemd/user/"
+  with_items:
+    - podman.service
+    - podman.socket
 
-- name: Copy podman service files
-  copy:
-    src: "podman.socket"
-    dest: "/usr/lib/systemd/user/"
 
-- name: Register systemd socket
+- name: Register systemd socket activation
   become: yes
   become_user: nomad
   systemd:
@@ -95,13 +102,6 @@
   environment:
     XDG_RUNTIME_DIR: "/run/user/990"
     DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/990/bus"
-
-- name: Register systemd service
-  systemd:
-    name: "podman.service"
-    enabled: true
-    state: restarted
-    daemon_reload: true
 
 - name: Add a default remote connection for nomad socket
   shell: podman-remote system connection add default /run/user/990/podman/podman.sock

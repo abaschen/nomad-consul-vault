@@ -5,6 +5,7 @@ datadir: "/mnt/tank/data"
 datadirs:
   nomad: "/var/opt"
 
+tld: techunter.io
 domain: server
 datacenter: dc1
 

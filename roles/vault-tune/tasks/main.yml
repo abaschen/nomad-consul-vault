@@ -15,10 +15,14 @@
   environment:
     VAULT_TOKEN: "{{ vault_root_key }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  when: vault_secrets.stdout | from_json | json_query( item.path +'.type' ) != item.type
+  when: vault_secrets.stdout | from_json | json_query( '\"' +item.path +'\".type' ) != item.type
   with_items:
   - { cmd: "pki", path: 'pki/', type: 'pki'}
+  - { cmd: "pki", path: 'pki_int/', type: 'pki'}
   - {cmd: "kv-v2", path: 'secrets/', type: 'kv'}
+
+
+###### https://learn.hashicorp.com/tutorials/vault/pki-engine
 
 - name: Tune vault
   shell: "vault secrets tune {{ item }}"
@@ -26,4 +30,32 @@
       VAULT_TOKEN: "{{ vault_root_key }}"
       VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   with_items:
-  - "-max-lease-ttl=8760h pki"
+  - "-max-lease-ttl=87600h pki"
+
+- name: Generate PKI
+  shell: "{{ item }}"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    # TODO use cluster address
+    VAULT_ADDR: "http://{{ hostvars['ix'].ansible_ssh_host }}:{{ vault.ports.http}}"
+  args:
+    chdir: "{{ configdir }}/vault.d/"
+  with_items:
+  - vault write -field=certificate pki/root/generate/internal common_name="{{ tld }}" ttl=87600h > {{ configdir }}/vault.d/CA_cert.crt
+  - vault write pki/config/urls issuing_certificates="$VAULT_ADDR/v1/pki/ca" crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
+  - vault secrets tune -max-lease-ttl=43800h pki_int
+  - vault write -format=json pki_int/intermediate/generate/internal common_name="{{tld}} Intermediate Authority" | jq -r '.data.csr' > {{ configdir }}/vault.d/pki_intermediate.csr
+  - vault write -format=json pki/root/sign-intermediate csr=@{{ configdir }}/vault.d/pki_intermediate.csr format=pem_bundle ttl="43800h" | jq -r '.data.certificate' > {{ configdir }}/vault.d/intermediate.cert.pem
+  - vault write pki_int/intermediate/set-signed certificate=@{{ configdir }}/vault.d/intermediate.cert.pem
+  - vault write pki_int/roles/{{ tld | replace('.','-') }} allowed_domains="{{ tld }}" allow_subdomains=true max_ttl="720h"
+
+- name: issue sub certificate
+  shell: vault write pki_int/issue/{{ tld | replace('.','-') }} common_name="{{ item }}.{{tld}}" ttl="24h"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_key }}"
+    # TODO use cluster address
+    VAULT_ADDR: "http://{{ hostvars['ix'].ansible_ssh_host }}:{{ vault.ports.http}}"
+  with_items:
+  - tesla
+  - radarr
+  - sonarr

@@ -1,0 +1,13 @@
+[Unit]
+Description=Fix cgroup controllers
+After=user.slice
+Requires=user.slice
+Before=systemd-logind.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/fix-delegate.sh
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

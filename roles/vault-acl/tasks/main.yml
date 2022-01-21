@@ -4,25 +4,20 @@
     timeout: 60
   delegate_to: localhost
   become: no
+
 - name: "Create Policy nomad-server policy"
-  shell:
-    cmd: "vault policy read nomad-server"
-  register: res
+  include_tasks: ./write-policy.yml
   environment:
     VAULT_TOKEN: "{{ vault_root_key }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  failed_when: "'Error reading policy named nomad-server' in res.stderr or 'local node not active but active cluster node not found' in res.stderr"
+  args:
+    policy_name: "{{item}}"
+  with_items:
+  - nomad-server
+  - torrent-api
+  - traefik
 
-- name: "Create Policy nomad-server policy"
-  shell:
-    cmd: "vault policy write nomad-server -"
-    stdin: "{{ lookup('file', 'nomad-server-policy.hcl') }}"
-  environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
-    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  when: res.rc != 0
-
-- name: "Create Policy nomad-server policy"
+- name: "Create Role for nomad-server policy"
   shell:
     cmd: "vault read /auth/token/roles/nomad-cluster"
   register: res
@@ -48,6 +43,7 @@
     cmd: "{{ item.getter }}"
   with_items:
     - { name: vault_nomad_token, getter: "vault token create -policy nomad-server -period 72h -orphan -token={{ vault_root_key }} -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
+    - { name: vault_traefik_token, getter: "vault token create -policy nomad-server -period 72h -orphan -token={{ vault_root_key }} -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
 
 - name: Setup consul again to refresh config file
   include_role:
