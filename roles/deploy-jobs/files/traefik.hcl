@@ -24,6 +24,7 @@ job "traefik" {
       driver = "podman"
 
       config {
+        cap_add=["CAP_NET_BIND_SERVICE"]
         image        = "traefik:latest"
         network_mode = "host"
         ports = ["http","https","external", "api"]
