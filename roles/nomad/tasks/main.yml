@@ -7,6 +7,47 @@
 - name: Enable Nomad user lingering
   shell: loginctl enable-linger nomad
 
+- name: Create podman userspace config
+  file:
+    path: "~/.config/containers"
+    state: directory
+  become: yes
+  become_user: nomad
+
+- name: Copy podman containers.conf
+  become: true
+  become_user: nomad
+  copy:
+    src: "containers.conf"
+    dest: "~/.config/containers"
+
+- name: Copy podman service files for socket activation
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/lib/systemd/user/"
+  with_items:
+    - podman.service
+    - podman.socket
+
+- name: Register systemd socket activation
+  become: yes
+  become_user: nomad
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: restarted
+    daemon_reload: true
+    scope: user
+  with_items:
+    - podman.socket
+    - podman.service
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/990"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/990/bus"
+
+- name: Add a default remote connection for nomad socket
+  shell: podman-remote system connection add default /run/user/990/podman/podman.sock
+
 - name: Allow nomad port
   ansible.posix.firewalld:
     port: "{{ item }}"
