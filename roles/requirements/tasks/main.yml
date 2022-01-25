@@ -72,5 +72,10 @@
     src: "fix-delegate.service"
     dest: "/etc/systemd/system/"
 
+- name: Fix number of file opened
+  copy:
+    src: "nofile.conf"
+    dest: "/etc/security/limits.d/90-nofile.conf"
+
 - name: Unconditionally reboot the machine with all defaults
   reboot: {}
