@@ -1,0 +1,45 @@
+# Install consul and base config
+- name: Install consul
+  include_role:
+    name: install-hashi
+  vars:
+    name: consul
+
+- name: Install consul-template
+  package:
+    name: "consul-template"
+    state: present
+  notify:
+  - consul config changed
+
+- name: Trigger notify now
+  meta: flush_handlers
+
+# Firewall rules for consul
+- name: Allow consul port
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+  with_items: "{{ consul.port_list }}"
+
+- name: Ensure consul bootstrap is ok
+  include_role:
+    name: bootstrap-consul
+  when: consul_bootstrap_token is not defined
+
+# Generate CA for TLS
+- name: Check that the CA for consul exists
+  stat:
+    path: "{{ configdir }}/consul.d/consul-agent-ca.pem"
+  register: stat_result
+
+- name: Consul TLS client
+  shell: "consul tls ca create && consul tls cert create -server -dc {{ datacenter }} && consul tls cert create -client -dc {{ datacenter }}"
+  args:
+    chdir: "{{ configdir }}/consul.d"
+  when: not stat_result.stat.exists
+
+- name: Write Roles and policies
+  include_role:
+    name: consul-acl

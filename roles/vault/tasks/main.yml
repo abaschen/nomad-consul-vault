@@ -1,0 +1,25 @@
+- name: Install vault
+  include_role:
+    name: install-hashi
+  vars:
+    name: vault
+
+- name: Allow vaults port
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+  with_items: "{{ vault.port_list }}"
+
+- include_role:
+    name: vault-init
+  when: vault_root_token is not defined
+
+- include_role:
+    name: vault-unseal
+
+- include_role:
+    name: vault-tune
+
+- include_role:
+    name: vault-acl

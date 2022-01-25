@@ -1,0 +1,14 @@
+
+- name: nomad config changed
+  template:
+    src: "nomad.hcl.j2"
+    dest: "{{ configdir }}/nomad.d/nomad.hcl"
+    owner: "nomad"
+    group: "nomad"
+    mode: '0644'
+
+- name: restart nomad
+  systemd:
+    name: nomad
+    state: restarted
+  listen: "nomad config changed"

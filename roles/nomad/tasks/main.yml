@@ -1,3 +1,19 @@
+- name: Install Nomad
+  include_role:
+    name: install-hashi
+  vars:
+    name: nomad
+
+- name: Enable Nomad user lingering
+  shell: loginctl enable-linger nomad
+
+- name: Allow nomad port
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+  with_items: "{{ nomad.port_list }}"
+
 - name: Create temporary build directory
   ansible.builtin.tempfile:
     state: directory
@@ -21,7 +37,7 @@
 
 - name: Ensure plugins directory exists and has proper ownership
   file:
-    path: "{{ datadirs[name] | default(datadir) }}/nomad/plugins"
+    path: "{{ datadirs.nomad }}/nomad/plugins"
     state: directory
     owner: "nomad"
     group: "nomad"
@@ -30,7 +46,7 @@
 - name: copy driver to nomad plugins dir
   copy:
     src: "{{ tmpdir.path }}/nomad-driver-podman"
-    dest: "{{ datadirs[name] | default(datadir) }}/nomad/plugins"
+    dest: "{{  datadirs.nomad | default(datadir) }}/nomad/plugins"
     remote_src: true
     owner: "nomad"
     group: "nomad"
@@ -52,3 +68,21 @@
   with_items:
   - subuid
   - subgid
+  notify:
+  - nomad config changed
+
+- name: Flush all handlers for config files
+  meta: flush_handlers
+
+- name: Ensure {{item}} is in a running state
+  service:
+    name: "{{ item }}"
+    state: started
+  register: serviceDetails
+  until: serviceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
+  with_items:
+  - consul
+  - vault
+  - nomad

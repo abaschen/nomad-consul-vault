@@ -7,7 +7,7 @@ addresses {
 }
 {% endif %}
 
-data_dir= "{{ datadirs[name] | default(datadir) }}/consul"
+data_dir= "{{ datadirs.consul | default(datadir) }}/consul"
 domain= "{{ domain }}"
 datacenter= "{{ datacenter }}"
 bind_addr= "0.0.0.0"

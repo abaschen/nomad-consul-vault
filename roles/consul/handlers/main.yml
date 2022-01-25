@@ -1,0 +1,14 @@
+
+- name: consul config changed
+  template:
+    src: "consul.hcl.j2"
+    dest: "{{ configdir }}/consul.d/consul.hcl"
+    owner: "consul"
+    group: "consul"
+    mode: '0644'
+
+- name: restart consul
+  systemd:
+    name: consul
+    state: restarted
+  listen: "consul config changed"

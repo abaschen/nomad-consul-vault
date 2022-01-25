@@ -181,6 +181,7 @@ AutoDownloader\SmartEpisodeFilter=s(\\d+)e(\\d+), (\\d+)x(\\d+), "(\\d{4}[.\\-]\
 
       config {
         image   = "guillaumedsde/jackett-distroless:latest"
+        ports = ["http"]
         volumes = [
           "/mnt/tank/storage/config/jackett:/config",
           "/mnt/tank/storage/download:/downloads",
@@ -200,8 +201,8 @@ AutoDownloader\SmartEpisodeFilter=s(\\d+)e(\\d+), (\\d+)x(\\d+), "(\\d{4}[.\\-]\
       }
 
       resources {
-        cpu    = 100
-        memory = 128
+        cpu    = 500
+        memory = 256
       }
       vault {
         policies = ["torrent-api"]
@@ -253,6 +254,8 @@ EOH
         UMASK      = "002"
       }
       config {
+        ports = ["http"]
+
         volumes      = [
           "/mnt/tank/storage/config/sonarr:/config",
           "/mnt/tank/storage/media/videos/TVShows:/tv",
@@ -320,6 +323,7 @@ exec s6-setuidgid abc mono --debug Sonarr.exe -nobrowser -data=/config
       }
       config {
         image = "lscr.io/linuxserver/radarr:latest"
+        ports = ["http"]
         volumes = [
           "/mnt/tank/storage/config/radarr:/config",
           "/mnt/tank/storage/media/videos/Movies:/movies",

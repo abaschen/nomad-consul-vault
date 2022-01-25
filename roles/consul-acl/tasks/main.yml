@@ -1,9 +1,12 @@
 ---
-- name: Wait 30s for consul to start properly
-  wait_for:
-    timeout: 30
-  delegate_to: localhost
-  become: no
+- name: Ensure Consul is in a running state
+  service:
+    name: consul
+    state: started
+  register: consulServiceDetails
+  until: consulServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
 
 - name: Create policies
   include_tasks: write-policies.yml
@@ -16,12 +19,3 @@
   - { name: "vault", descr: "Vault Service Token" }
   - { name: "traefik", descr: "Traefik Catalog Service Token" }
 
-- name: Setup consul again to refresh config file
-  include_role:
-    name: install-hashi
-  vars:
-    name: consul
-    port_list: "{{ consul.port_list }}"
-
-#- name: set agent token
-#  shell: "consul acl set-agent-token -token='{{ consul_bootstrap_token }}' agent {{ consul_node_token }}"

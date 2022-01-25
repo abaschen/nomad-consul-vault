@@ -5,18 +5,13 @@
     cmd: consul acl policy list -token={{ consul_bootstrap_token }} -format=json | jq -r '.[] | select(.Name == "{{ acl_name }}") | .ID'
   register: check_result
 
-- debug:
-    var: check_result
 - set_fact:
     acl_exists: "{{check_result.rc == 0 and check_result.stdout != '' }}"
-    #acl_exists: "{{check_result.stdout != 'false'}}"
+
 - set_fact:
     tern: "{{ acl_exists | ternary('update', 'create') }}"
-    acl: "{{lookup('file', acl_name +'-policy.hcl') | trim | regex_replace('[\\r\\n]+','\n')}}"
-- debug:
-    var: tern
-- debug:
-    var: acl_exists
+    acl: "{{lookup('file', acl_name +'.hcl') | trim | regex_replace('[\\r\\n]+','\n')}}"
+
 - name: "Create ACL {{ acl_name }} policy"
   shell:
     cmd: "consul acl policy {{ acl_exists | ternary('update', 'create') }} -name {{ acl_name }} -token='{{ consul_bootstrap_token }}' -rules -"
@@ -29,5 +24,9 @@
     name: read-or-get-key
   vars:
     key_name: "consul_{{ acl_name }}_token"
-    key_folder: "{{ playbook_dir }}/.consul/policies"
-    cmd: "consul acl token create -description '{{ acl_descr }}' -token='{{ consul_bootstrap_token }}' -policy-name {{ acl_name }} -format=json | jq -r '.SecretID'"
+    cmd: "consul acl token create -description '{{ acl_desc }}' -token='{{ consul_bootstrap_token }}' -policy-name {{ acl_name }} -format=json | jq -r '.SecretID'"
+
+- name: Restart consul
+  meta: noop
+  notify:
+  - consul config changed

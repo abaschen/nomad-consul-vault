@@ -1,23 +1,25 @@
+- name: Ensure Vault is in a running state
+  service:
+    name: vault
+    state: started
+  register: vaultServiceDetails
+  until: vaultServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
+
 - name: Get vault status
   shell: vault status -format=json
+  failed_when: false
   register: vault_status
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
 
-- name: Reading unseal key contents
-  command: cat {{item}}
-  register: unseal_keys
-  with_fileglob: "{{ playbook_dir }}/.vault/unsealKey/*"
-  delegate_to: localhost
-  become: no
-  when: vault_status.stdout | from_json | json_query('sealed')
-
 - name: Unseal vault with unseal keys
   shell: |
-    vault operator unseal {{ item.stdout }}
+    vault operator unseal {{ vars['vault_unseal_key_' + (item | string)] }}
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  with_items: "{{unseal_keys.results}}"
+  loop: "{{ range(0, 3 + 1) | list }}"
   when: vault_status.stdout | from_json | json_query('sealed')
 
 

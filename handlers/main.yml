@@ -1,21 +1,30 @@
 ---
+
+- name: consul write config
+
+
 - name: restart consul
   systemd:
     name: consul
     state: restarted
-
+- name: restart vault
+  systemd:
+    name: vault
+    state: restarted
 - name: restart nomad
   systemd:
     name: nomad
     state: restarted
+- name: consul bootstrap done
+- name: consul acl done
+- name: nomad acl done
+- name: vault acl done
+- name: vault bootstrap done
 
-- name: restart podman
+
+- name: restart container
   systemd:
-    name: podman
-    state: restarted
-- name: restart docker
-  systemd:
-    name: docker
+    name: "{{ container_engine | default('podman') }}"
     state: restarted
 
 # Handler showing how to clean yum metadata cache

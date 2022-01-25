@@ -25,6 +25,7 @@
     name: "{{ name }}"
     enabled: true
     state: stopped
+
 - name: Ensure directory exists and has proper ownership
   file:
     path: "{{ item }}"
@@ -50,17 +51,6 @@
     state: link
     follow: false
 
-- name: Product specific tasks
-  include_tasks: "{{ name }}.yml"
-
-- name: Install config file
-  template:
-    src: "./templates/{{ name }}.hcl.j2"
-    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.hcl"
-    owner: "{{ name }}"
-    group: "{{ name }}"
-    mode: '0644'
-
 - name: Install service file
   template:
     src: "./templates/{{ name }}.service.j2"
@@ -74,11 +64,4 @@
     name: "{{ name }}"
     enabled: true
     daemon_reload: true
-    state: started
-
-- name: Allow {{ name }} port
-  ansible.posix.firewalld:
-    port: "{{ item }}"
-    permanent: yes
-    state: enabled
-  loop: "{{ lookup('vars', name)['port_list'] }}"
+    state: stopped

@@ -10,14 +10,13 @@ api_addr = "http://ix:{{ vault.ports.http }}"
 #}
 
 storage "consul" {
-  address = "ix:{{ consul.ports.https }}"
+  address = "server.{{datacenter}}.consul:{{ consul.ports.https }}"
   path    = "vault/"
-  token = "{{ consul_vault_token }}"
+  token = "{{ consul_vault_token | default('') }}"
   scheme = "https"
   tls_ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
   tls_cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"
   tls_key_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0-key.pem"
-  tls_skip_verify = "true"
 }
 
 # HTTP listener

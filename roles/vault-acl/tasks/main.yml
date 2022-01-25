@@ -1,9 +1,12 @@
 ---
-- name: Wait 30s for vault to start properly
-  wait_for:
-    timeout: 60
-  delegate_to: localhost
-  become: no
+- name: Ensure vault is in a running state
+  service:
+    name: vault
+    state: started
+  register: vaultServiceDetails
+  until: vaultServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
 
 - name: "Create Policy nomad-server policy"
   include_tasks: ./write-policy.yml
@@ -19,7 +22,7 @@
     cmd: "vault read /auth/token/roles/nomad-cluster"
   register: res
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   failed_when: "'local node not active but active cluster node not found' in res.stderr"
 
@@ -27,7 +30,7 @@
   shell:
     cmd: "vault write /auth/token/roles/nomad-cluster disallowed_policies='nomad-server' token_explicit_max_ttl=0 name='nomad-cluster' orphan=true token_period=259200 renewable=true"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   when: res.rc != 0
 
@@ -36,15 +39,12 @@
     name: read-or-get-key
   vars:
     key_name: "{{ item.name }}"
-    key_folder: "{{ playbook_dir }}/.vault/policies"
     cmd: "{{ item.getter }}"
   with_items:
-    - { name: vault_nomad_token, getter: "vault token create -policy nomad-server -period 72h -orphan -token={{ vault_root_key }} -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
-    - { name: vault_traefik_token, getter: "vault token create -policy nomad-server -period 72h -orphan -token={{ vault_root_key }} -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
+    - { name: vault_nomad_token, getter: "vault token create -policy nomad-server -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
+    - { name: vault_traefik_token, getter: "vault token create -policy traefik -policy pki_manager -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
 
-- name: Setup consul again to refresh config file
-  include_role:
-    name: install-hashi
-  vars:
-    name: vault
-    port_list: "{{ vault.port_list }}"
+- name: Refresh Vault config
+  meta: noop
+  notify:
+  - vault config changed

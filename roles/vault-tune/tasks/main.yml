@@ -1,19 +1,22 @@
-- name: Wait 5s for vault to start properly
-  wait_for:
-    timeout: 5
-  delegate_to: localhost
-  become: no
+- name: Ensure Vault is in a running state
+  service:
+    name: vault
+    state: started
+  register: vaultServiceDetails
+  until: vaultServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
 
 - shell: vault secrets list -format=json
   register: vault_secrets
   environment:
-      VAULT_TOKEN: "{{ vault_root_key }}"
+      VAULT_TOKEN: "{{ vault_root_token }}"
       VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
 
 - name: Enable KV store
   shell: "vault secrets enable --path={{ item.path }} {{ item.cmd }}"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   when: vault_secrets.stdout | from_json | json_query( '\"' +item.path +'\".type' ) != item.type
   with_items:
@@ -27,7 +30,7 @@
 - name: Tune vault
   shell: "vault secrets tune {{ item }}"
   environment:
-      VAULT_TOKEN: "{{ vault_root_key }}"
+      VAULT_TOKEN: "{{ vault_root_token }}"
       VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   with_items:
   - "-max-lease-ttl=87600h pki"
@@ -35,11 +38,12 @@
 - name: Generate PKI
   shell: "{{ item }}"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     # TODO use cluster address
     VAULT_ADDR: "http://{{ hostvars['ix'].ansible_ssh_host }}:{{ vault.ports.http}}"
   args:
     chdir: "{{ configdir }}/vault.d/"
+  when: false
   with_items:
   - vault write -field=certificate pki/root/generate/internal common_name="{{ tld }}" ttl=87600h > {{ configdir }}/vault.d/CA_cert.crt
   - vault write pki/config/urls issuing_certificates="$VAULT_ADDR/v1/pki/ca" crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
@@ -52,7 +56,7 @@
 - name: issue sub certificate
   shell: vault write pki_int/issue/{{ tld | replace('.','-') }} common_name="{{ item }}.{{tld}}" ttl="24h"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     # TODO use cluster address
     VAULT_ADDR: "http://{{ hostvars['ix'].ansible_ssh_host }}:{{ vault.ports.http}}"
   with_items:

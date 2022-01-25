@@ -1,6 +1,6 @@
 # Full configuration options can be found at https://www.nomadproject.io/docs/configuration
 
-data_dir = "{{ datadirs[name] | default(datadir) }}/nomad"
+data_dir = "{{ datadirs.nomad | default(datadir) }}/nomad"
 bind_addr = "0.0.0.0"
 {% if server %}
 server {
@@ -32,7 +32,7 @@ vault {
 {% if consul %}
 consul {
     token = "{{ consul_nomad_token }}"
-    address = "ix:{{consul.ports.http}}"
+    address = "server.dc1.consul:{{consul.ports.http}}"
     ssl       = true
     ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
     cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"

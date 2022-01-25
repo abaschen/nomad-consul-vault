@@ -2,9 +2,21 @@
   shell: "{{ cmd }}"
   register: key_cmd
 
-- name: Write key {{ key_name }} to file
-  copy:
-    dest: "{{ key_folder }}/{{ key_name }}"
-    content: "{{ key_cmd.stdout }}"
+- set_fact:
+    "{{ k.name }}": "{{ k.val }}"
+  no_log: true
+  with_items:
+    - { name: "{{ key_name }}", val: "{{key_cmd.stdout}}" }
+  loop_control:
+    loop_var: k
+
+- name: Save to secrets
+  lineinfile:
+    dest: "{{ playbook_dir }}/.secrets.yml"
+    line: "{{key_name}}: \"{{key_cmd.stdout}}\""
+    regexp: "^{{key_name}}:.*$"
+    create: true
+    state: present
   delegate_to: localhost
   become: no
+  when: write | default(true)

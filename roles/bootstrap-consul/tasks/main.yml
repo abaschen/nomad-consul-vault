@@ -1,11 +1,20 @@
+- name: Ensure Consul is in a running state
+  service:
+    name: consul
+    state: started
+  register: consulServiceDetails
+  until: consulServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
+
 - name: Read or create keys
   include_role:
     name: read-or-get-key
   vars:
     key_name: "{{ item.name }}"
-    key_folder: "{{ playbook_dir }}/.consul"
     cmd: "{{ item.getter }}"
   with_items:
     - { name: consul_gossip_key, getter: "consul keygen" }
     - { name: consul_bootstrap_token, getter: "consul acl bootstrap -format=json | jq -r '.SecretID'" }
-
+  notify:
+  - consul config changed

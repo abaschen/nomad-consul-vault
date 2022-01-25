@@ -1,63 +1,12 @@
 ---
 - hosts: ix
-  #vars_files:
-   # - secrets.yml
+  vars_files:
+  - .secrets.yml
   become: yes
   gather_facts: true
-  tasks:
-  - include_role:
-      name: requirements
-    when: false
-  - include_role:
-      name: install-hashi
-      apply:
-        tags:
-          - "consul"
-    vars:
-      name: consul
-      port_list: "{{ consul.port_list }}"
-    when: false
-  - include_role:
-      name: bootstrap-consul
-      apply:
-        tags:
-          - "consul"
-    when: false
-  - include_role:
-      name: consul-acl
-      apply:
-        tags:
-          - "consul"
-
-    when: false
-  - include_role:
-      name: install-hashi
-      apply:
-        tags:
-          - "vault"
-    vars:
-      name: vault
-      port_list: "{{ vault.port_list }}"
-
-    when: false
-  - include_role:
-      name: vault-init
-    when: vault_root_key is not defined
-  - include_role:
-      name: vault-unseal
-    when: vault_root_key is defined
-  - include_role:
-      name: vault-tune
-    when: vault_root_key is defined
-  - include_role:
-      name: vault-acl
-    when: vault_root_key is defined
-  - include_role:
-      name: install-hashi
-      apply:
-        tags:
-          - "nomad"
-    vars:
-      name: nomad
-      port_list: "{{ nomad.port_list }}"
+  roles:
+  - requirements
+  - consul
+  - vault
+  - nomad
 

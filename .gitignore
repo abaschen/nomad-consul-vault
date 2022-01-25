@@ -2,3 +2,4 @@
 .consul
 .vault
 .nomad
+.secrets.yml

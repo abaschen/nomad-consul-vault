@@ -3,7 +3,7 @@
   shell:
     cmd: "vault policy read {{ policy_name }}"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   register: res
   failed_when: "'Error reading policy named' in res.stderr or 'local node not active but active cluster node not found' in res.stderr"
@@ -13,6 +13,6 @@
     cmd: "vault policy write {{ policy_name }} -"
     stdin: "{{ lookup('file', policy_name+ '.hcl') }}"
   environment:
-    VAULT_TOKEN: "{{ vault_root_key }}"
+    VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
   when: res.rc != 0

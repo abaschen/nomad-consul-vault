@@ -1,0 +1,13 @@
+- name: vault config changed
+  template:
+    src: "vault.hcl.j2"
+    dest: "{{ configdir }}/vault.d/vault.hcl"
+    owner: "vault"
+    group: "vault"
+    mode: '0644'
+
+- name: restart vault
+  systemd:
+    name: vault
+    state: restarted
+  listen: "vault config changed"

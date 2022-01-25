@@ -28,6 +28,14 @@
   - net.bridge.bridge-nf-call-iptables
   - net.ipv4.ip_forward
 
+- sysctl:
+    name: net.ipv4.ping_group_range
+    value: '0 2000000'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
+
 - name: Add IP address of all hosts to all hosts
   lineinfile:
     dest: /etc/hosts
@@ -43,7 +51,7 @@
   lineinfile:
     dest: /etc/hosts
     regexp: "127[.]0[.]0[.]1.*"
-    line: "127.0.0.1 localhost.localdomain localhost {{ ansible_hostname }} {{ comment }}"
+    line: "127.0.0.1 localhost.localdomain localhost server.dc1.consul {{ ansible_hostname }} {{ comment }}"
     state: present
     owner: root
     group: root
@@ -85,7 +93,6 @@
   with_items:
     - podman.service
     - podman.socket
-
 
 - name: Register systemd socket activation
   become: yes
