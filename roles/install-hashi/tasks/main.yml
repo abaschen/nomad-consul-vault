@@ -1,19 +1,28 @@
 - name: Ensure group "hashi" exists
   group:
-    name: hashi
+    name: "{{group}}"
     state: present
-    gid: 2000
+    gid: "{{gid}}"
 
-- name: Add {{ name }} users
+- name: Check user folder exists
+  file:
+    path: "{{ datadir }}/home"
+    state: present
+    owner: "{{uid}}"
+    group: "{{gid}}"
+
+
+- name: Add hashi user
   user:
-    name: "{{ name }}"
+    name: "{{user}}"
+    uid: "{{uid}}"
     state: present
     system: true
     shell: "/usr/bin/false"
-    home: "/etc/{{ name }}.d"
+    home: "{{ datadir }}/home"
     groups:
     - wheel
-    - hashi
+    - "{{group}}"
 
 - name: Install {{ name }}
   package:
@@ -31,8 +40,8 @@
     path: "{{ item }}"
     state: directory
     recurse: yes
-    owner: "{{ name }}"
-    group: "{{ name }}"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
     follow: false
   with_items:
   - "{{ configdir }}/{{ name }}.d"
@@ -55,8 +64,8 @@
   template:
     src: "./templates/{{ name }}.service.j2"
     dest: "/etc/systemd/system/{{ name }}.service"
-    owner: "{{ name }}"
-    group: "{{ name }}"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
     mode: '0644'
 
 - name: Register systemd service

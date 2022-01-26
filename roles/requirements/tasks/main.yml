@@ -1,6 +1,13 @@
+- include_role:
+    name: server-update
+
 - name: Disable SELinux
   ansible.posix.selinux:
-    state: disabled
+    state: enforcing
+    policy: targeted
+
+- name: Change kernel args
+  command: grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1 nopti noibrs noibpb"
 
 - name: load br_netfilter kernel module
   modprobe:

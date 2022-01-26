@@ -7,8 +7,8 @@ Documentation="https://www.consul.io/docs/agent/options"
 [Service]
 Restart=on-failure
 ExecStart=/usr/bin/consul agent -config-dir=/etc/consul.d -enable-script-checks
-User=consul
-Group=consul
+User={{user}}
+Group={{group}}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 KillSignal=SIGINT

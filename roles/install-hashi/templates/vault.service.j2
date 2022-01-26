@@ -7,8 +7,8 @@ After=network-online.target
 [Service]
 Restart=on-failure
 ExecStart=/usr/bin/vault server -config=/etc/vault.d/vault.hcl
-User=vault
-Group=vault
+User={{user}}
+Group={{group}}
 ExecReload=/bin/kill --signal HUP $MAINPID
 KillMode=process
 KillSignal=SIGINT

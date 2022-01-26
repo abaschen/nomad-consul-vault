@@ -4,6 +4,10 @@ configdir: "/mnt/tank/config"
 datadir: "/mnt/tank/data"
 datadirs:
   nomad: "/var/opt"
+user: hashi
+group: hashi
+uid: 2000
+gid: 2000
 
 tld: techunter.io
 domain: server

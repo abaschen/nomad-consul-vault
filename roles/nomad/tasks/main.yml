@@ -5,18 +5,18 @@
     name: nomad
 
 - name: Enable Nomad user lingering
-  shell: loginctl enable-linger nomad
+  shell: loginctl enable-linger hashi
 
 - name: Create podman userspace config
   file:
     path: "~/.config/containers"
     state: directory
   become: yes
-  become_user: nomad
+  become_user: "{{user}}"
 
 - name: Copy podman containers.conf
   become: true
-  become_user: nomad
+  become_user: "{{user}}"
   copy:
     src: "containers.conf"
     dest: "~/.config/containers"
@@ -31,7 +31,7 @@
 
 - name: Register systemd socket activation
   become: yes
-  become_user: nomad
+  become_user: "{{ user }}"
   systemd:
     name: "{{ item }}"
     enabled: true
@@ -42,8 +42,8 @@
     - podman.socket
     - podman.service
   environment:
-    XDG_RUNTIME_DIR: "/run/user/990"
-    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/990/bus"
+    XDG_RUNTIME_DIR: "/run/user/{{uid}}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{uid}}/bus"
 
 - name: Add a default remote connection for nomad socket
   shell: podman-remote system connection add default /run/user/990/podman/podman.sock
@@ -80,8 +80,8 @@
   file:
     path: "{{ datadirs.nomad }}/nomad/plugins"
     state: directory
-    owner: "nomad"
-    group: "nomad"
+    owner: "{{uid}}"
+    group: "{{uid}}"
     follow: false
 
 - name: copy driver to nomad plugins dir
@@ -89,8 +89,8 @@
     src: "{{ tmpdir.path }}/nomad-driver-podman"
     dest: "{{  datadirs.nomad | default(datadir) }}/nomad/plugins"
     remote_src: true
-    owner: "nomad"
-    group: "nomad"
+    owner: "{{gid}}"
+    group: "{{uid}}"
     mode: "u+rwx"
 
 - name: Remove temp folder
@@ -102,8 +102,8 @@
 - name: Add subids to system files
   lineinfile:
     dest: "/etc/{{ item }}"
-    regexp: "^nomad:(\\d+):(\\d+)$"
-    line: "nomad:100000:65536"
+    regexp: "^{{user}}:(\\d+):(\\d+)$"
+    line: "{{user}}:100000:65536"
     create: true
     state: present
   with_items:
