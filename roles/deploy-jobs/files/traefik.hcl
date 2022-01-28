@@ -24,10 +24,11 @@ job "traefik" {
       driver = "podman"
 
       config {
-        cap_add=["CAP_NET_BIND_SERVICE"]
-        image        = "traefik:latest"
+        cap_add=["CAP_NET_BIND_SERVICE", "NET_ADMIN"]
+        image        = "registry.connect.redhat.com/containous/traefikee:v2.1.0-ubi"
         network_mode = "host"
-        ports = ["http","https","external", "api"]
+        #privileged = "true"
+        #ports = ["http","https","external", "api"]
         volumes = [
           "/etc/consul.d/consul-agent-ca.pem:/etc/ssl/consul/ca.crt",
           "/mnt/tank/storage/config/certs:/etc/ssl/certs",
@@ -35,7 +36,7 @@ job "traefik" {
         ]
       }
       vault {
-        policies = ["traefik", "pki-manager"]
+        policies = ["traefik", "issue-techunter-io"]
         change_mode   = "signal"
         change_signal = "SIGINT"
       }

@@ -16,6 +16,8 @@
   - nomad-server
   - torrent-api
   - traefik
+  - plex
+  - issue-techunter-io
 
 - name: "Create Role for nomad-server policy"
   shell:
@@ -41,10 +43,5 @@
     key_name: "{{ item.name }}"
     cmd: "{{ item.getter }}"
   with_items:
-    - { name: vault_nomad_token, getter: "vault token create -policy nomad-server -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
-    - { name: vault_traefik_token, getter: "vault token create -policy traefik -policy pki_manager -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
-
-- name: Refresh Vault config
-  meta: noop
-  notify:
-  - vault config changed
+    - { name: vault_nomad_token, getter: "VAULT_TOKEN={{vault_root_token}} vault token create -policy nomad-server -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }
+    - { name: vault_traefik_token, getter: "VAULT_TOKEN={{vault_root_token}} vault token create -policy traefik -policy pki_manager -period 72h -orphan -address=http://127.0.0.1:{{ vault.ports.http}} -format=json | jq -r '.auth.client_token'" }

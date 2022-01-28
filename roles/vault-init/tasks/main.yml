@@ -25,8 +25,6 @@
   loop_control:
     index_var: index
   when: vault_init_results is defined
-  notify:
-  - vault config changed
 
 - name: Save root key to secrets
   lineinfile:

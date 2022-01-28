@@ -5,7 +5,7 @@
     name: nomad
 
 - name: Enable Nomad user lingering
-  shell: loginctl enable-linger hashi
+  shell: "loginctl enable-linger {{user}}"
 
 - name: Create podman userspace config
   file:
@@ -29,6 +29,12 @@
     - podman.service
     - podman.socket
 
+- name: Allow manage cgroups
+  ansible.posix.seboolean:
+    name: container_manage_cgroup
+    state: yes
+    persistent: yes
+
 - name: Register systemd socket activation
   become: yes
   become_user: "{{ user }}"
@@ -45,9 +51,6 @@
     XDG_RUNTIME_DIR: "/run/user/{{uid}}"
     DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{uid}}/bus"
 
-- name: Add a default remote connection for nomad socket
-  shell: podman-remote system connection add default /run/user/990/podman/podman.sock
-
 - name: Allow nomad port
   ansible.posix.firewalld:
     port: "{{ item }}"
@@ -60,28 +63,33 @@
     state: directory
     suffix: build
   register: tmpdir
+
+- name: Install build requirements and podman-remote
+  package:
+    name:
+      - golang
+      - podman-remote
+      - git
+      - crun
+    state: latest
+
 - name: building podman driver
   git:
     repo: https://github.com/hashicorp/nomad-driver-podman.git
     dest: "{{ tmpdir.path }}"
 
-- name: Install build requirements
-  package:
-    name:
-      - golang
-    state: latest
-
 - name: Build podman nomad driver
   shell: ./build.sh
   args:
+    creates: "{{ tmpdir.path }}/nomad-driver-podman"
     chdir: "{{ tmpdir.path }}"
 
 - name: Ensure plugins directory exists and has proper ownership
   file:
     path: "{{ datadirs.nomad }}/nomad/plugins"
     state: directory
-    owner: "{{uid}}"
-    group: "{{uid}}"
+    owner: "{{user}}"
+    group: "{{group}}"
     follow: false
 
 - name: copy driver to nomad plugins dir
@@ -89,8 +97,8 @@
     src: "{{ tmpdir.path }}/nomad-driver-podman"
     dest: "{{  datadirs.nomad | default(datadir) }}/nomad/plugins"
     remote_src: true
-    owner: "{{gid}}"
-    group: "{{uid}}"
+    owner: "{{user}}"
+    group: "{{group}}"
     mode: "u+rwx"
 
 - name: Remove temp folder
@@ -109,11 +117,11 @@
   with_items:
   - subuid
   - subgid
-  notify:
-  - nomad config changed
+- include_tasks: ./update-config.yml
 
-- name: Flush all handlers for config files
-  meta: flush_handlers
+
+- name: Add a default remote connection for nomad socket
+  shell: podman-remote system connection add default /run/user/{{uid}}/podman/podman.sock
 
 - name: Ensure {{item}} is in a running state
   service:

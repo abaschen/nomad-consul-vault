@@ -1,4 +1,3 @@
-
 - name: nomad config changed
   template:
     src: "nomad.hcl.j2"

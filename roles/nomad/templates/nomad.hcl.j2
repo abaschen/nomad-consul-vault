@@ -32,7 +32,7 @@ vault {
 {% if consul %}
 consul {
     token = "{{ consul_nomad_token }}"
-    address = "server.dc1.consul:{{consul.ports.http}}"
+    address = "server.dc1.consul:{{consul.ports.https}}"
     ssl       = true
     ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
     cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"
@@ -43,7 +43,7 @@ consul {
 {% if podman %}
 plugin "nomad-driver-podman" {
   config {
-    socket_path="unix://run/user/990/podman/podman.sock"
+    socket_path="unix://run/user/{{uid}}/podman/podman.sock"
     volumes {
 
       enabled      = true

@@ -3,8 +3,8 @@
 
 - name: Disable SELinux
   ansible.posix.selinux:
-    state: enforcing
-    policy: targeted
+    state: disabled
+    #policy: targeted
 
 - name: Change kernel args
   command: grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1 nopti noibrs noibpb"

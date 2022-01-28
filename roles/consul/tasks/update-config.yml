@@ -1,4 +1,3 @@
-
 - name: consul config changed
   template:
     src: "consul.hcl.j2"

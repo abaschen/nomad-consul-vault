@@ -16,5 +16,3 @@
   with_items:
     - { name: consul_gossip_key, getter: "consul keygen" }
     - { name: consul_bootstrap_token, getter: "consul acl bootstrap -format=json | jq -r '.SecretID'" }
-  notify:
-  - consul config changed

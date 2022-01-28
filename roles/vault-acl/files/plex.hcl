@@ -1,0 +1,1 @@
+path "secrets/data/plex" { capabilities = ["read"] }

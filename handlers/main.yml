@@ -1,8 +1,5 @@
 ---
 
-- name: consul write config
-
-
 - name: restart consul
   systemd:
     name: consul
@@ -15,12 +12,6 @@
   systemd:
     name: nomad
     state: restarted
-- name: consul bootstrap done
-- name: consul acl done
-- name: nomad acl done
-- name: vault acl done
-- name: vault bootstrap done
-
 
 - name: restart container
   systemd:

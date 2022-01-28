@@ -9,11 +9,8 @@
   package:
     name: "consul-template"
     state: present
-  notify:
-  - consul config changed
 
-- name: Trigger notify now
-  meta: flush_handlers
+- include_tasks: ./update-config.yml
 
 # Firewall rules for consul
 - name: Allow consul port
@@ -43,3 +40,5 @@
 - name: Write Roles and policies
   include_role:
     name: consul-acl
+
+- include_tasks: ./update-config.yml
