@@ -14,6 +14,7 @@
 - include_role:
     name: vault-init
   when: vault_root_token is not defined
+
 - include_tasks: ./update-config.yml
 
 - include_role:

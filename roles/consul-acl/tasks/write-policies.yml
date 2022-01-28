@@ -3,6 +3,8 @@
   # Attempt to help with long lines > 160 issues
   shell:
     cmd: consul acl policy list -token={{ consul_bootstrap_token }} -format=json | jq -r '.[] | select(.Name == "{{ acl_name }}") | .ID'
+  environment:
+    CONSUL_HTTP_SSL_VERIFY: "false"
   register: check_result
 
 - set_fact:
@@ -11,10 +13,16 @@
 - set_fact:
     tern: "{{ acl_exists | ternary('update', 'create') }}"
     acl: "{{lookup('file', acl_name +'.hcl') | trim | regex_replace('[\\r\\n]+','\n')}}"
+- debug:
+    var: check_result
+- debug:
+    var: acl_exists
+- debug:
+    var: tern
 
 - name: "Create ACL {{ acl_name }} policy"
   shell:
-    cmd: "consul acl policy {{ acl_exists | ternary('update', 'create') }} -name {{ acl_name }} -token='{{ consul_bootstrap_token }}' -rules -"
+    cmd: "consul acl policy {{ tern }} -name {{ acl_name }} -token='{{ consul_bootstrap_token }}' -rules -"
     stdin: "{{acl}}"
   environment:
     CONSUL_HTTP_TOKEN: consul_bootstrap_token

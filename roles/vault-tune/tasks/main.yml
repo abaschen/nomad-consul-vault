@@ -9,6 +9,9 @@
 
 - shell: vault secrets list -format=json
   register: vault_secrets
+  retries: 5
+  delay: 20
+  failed_when: "'Error reading policy named' in vault_secrets.stderr or 'local node not active but active cluster node not found' in vault_secrets.stderr"
   environment:
       VAULT_TOKEN: "{{ vault_root_token }}"
       VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"

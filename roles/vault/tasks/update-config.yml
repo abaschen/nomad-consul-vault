@@ -2,9 +2,21 @@
   template:
     src: "vault.hcl.j2"
     dest: "{{ configdir }}/vault.d/vault.hcl"
-    owner: "vault"
-    group: "vault"
+    owner: "hashi"
+    group: "hashi"
     mode: '0644'
+
+- name: Writing shell profile for ssh user
+  become: false
+  lineinfile:
+    path: ~/.bashrc
+    regexp: '^export {{item.key}}'
+    line: "export {{item.key}}={{item.value}}"
+    create: true
+  with_dict:
+    VAULT_TOKEN: "{{ vault_root_token }}"
+    VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+
 
 - name: restart vault
   systemd:

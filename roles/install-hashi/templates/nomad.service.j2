@@ -13,7 +13,7 @@ After=vault.service
 
 [Service]
 Restart=on-failure
-ExecStart=/usr/bin/nomad agent -config=/etc/nomad.d/nomad.hcl
+ExecStart=/usr/bin/nomad agent -config={{configdir}}/nomad.d/nomad.hcl
 User={{user}}
 Group={{group}}
 ExecReload=/bin/kill -HUP $MAINPID

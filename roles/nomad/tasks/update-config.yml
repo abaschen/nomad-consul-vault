@@ -2,8 +2,8 @@
   template:
     src: "nomad.hcl.j2"
     dest: "{{ configdir }}/nomad.d/nomad.hcl"
-    owner: "nomad"
-    group: "nomad"
+    owner: "hashi"
+    group: "hashi"
     mode: '0644'
 
 - name: restart nomad

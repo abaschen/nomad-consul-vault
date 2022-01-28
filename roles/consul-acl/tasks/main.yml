@@ -11,11 +11,11 @@
 - name: Create policies
   include_tasks: write-policies.yml
   vars:
-    acl_name: "{{ item.name }}"
-    acl_desc: "{{ item.descr }}"
-  with_items:
-  - { name: "node", descr:  "Node Token" }
-  - { name: "nomad", descr: "Nomad Service Token" }
-  - { name: "vault", descr: "Vault Service Token" }
-  - { name: "traefik", descr: "Traefik Catalog Service Token" }
+    acl_name: "{{ item.key }}"
+    acl_desc: "{{ item.value }}"
+  with_dict:
+    node:  "Node Token"
+    nomad: "Nomad Service Token"
+    vault: "Vault Service Token"
+    traefik: "Traefik Catalog Service Token"
 

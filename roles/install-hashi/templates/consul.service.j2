@@ -6,7 +6,7 @@ Documentation="https://www.consul.io/docs/agent/options"
 
 [Service]
 Restart=on-failure
-ExecStart=/usr/bin/consul agent -config-dir=/etc/consul.d -enable-script-checks
+ExecStart=/usr/bin/consul agent -config-dir={{configdir}}/consul.d -enable-script-checks
 User={{user}}
 Group={{group}}
 ExecReload=/bin/kill -HUP $MAINPID

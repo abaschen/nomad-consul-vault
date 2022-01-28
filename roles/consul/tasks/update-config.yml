@@ -2,9 +2,21 @@
   template:
     src: "consul.hcl.j2"
     dest: "{{ configdir }}/consul.d/consul.hcl"
-    owner: "consul"
-    group: "consul"
+    owner: "hashi"
+    group: "hashi"
     mode: '0644'
+
+- name: Writing shell profile for ssh user
+  become: false
+  lineinfile:
+    path: ~/.bashrc
+    regexp: '^export {{item.key}}'
+    line: "export {{item.key}}={{item.value}}"
+    create: true
+  with_dict:
+    CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
+    CONSUL_HTTP_ADDR: "https://server.{{datacenter}}.consul:{{ consul.ports.https}}"
+    CONSUL_HTTP_SSL_VERIFY: "false"
 
 - name: restart consul
   systemd:
