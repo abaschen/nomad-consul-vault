@@ -10,4 +10,3 @@
   systemd:
     name: vault
     state: restarted
-  listen: "vault config changed"

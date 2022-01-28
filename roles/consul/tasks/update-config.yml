@@ -10,4 +10,3 @@
   systemd:
     name: consul
     state: restarted
-  listen: "consul config changed"
