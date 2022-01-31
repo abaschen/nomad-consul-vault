@@ -10,6 +10,7 @@ Type=exec
 KillMode=process
 Environment=LOGGING="--log-level=info"
 ExecStart=/usr/bin/podman $LOGGING system service
+LimitNOFILE=500000
 
 [Install]
 WantedBy=default.target
