@@ -14,7 +14,7 @@
   lineinfile:
     dest: "{{ playbook_dir }}/.secrets.yml"
     line: "{{key_name}}: \"{{key_cmd.stdout}}\""
-    regexp: "^{{key_name}}:.*$"
+    regexp: "^{{key_name}}: {{key_cmd.stdout}}$"
     create: true
     state: present
   delegate_to: localhost

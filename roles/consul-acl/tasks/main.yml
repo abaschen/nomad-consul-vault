@@ -11,11 +11,47 @@
 - name: Create policies
   include_tasks: write-policies.yml
   vars:
+    acl_name: "{{ item }}"
+  with_items:
+  - node
+  - nomad-client
+  - nomad-server
+  - traefik
+  - vault
+- name: check tokens
+  shell: consul acl token list -token={{consul_bootstrap_token}} -format=json|jq -r '.[] | .SecretID'
+  failed_when: tokens.stderr != ''
+  register: tokens
+
+- debug:
+    var: tokens
+
+- name: Unset expired token
+  set_fact:
+    "{{hostvars[ansible_hostname]['consul_'+item+'_token']}}": "{{None}}"
+  when: (hostvars[ansible_hostname]['consul_'+item+'_token']|default(None)) != None and hostvars[ansible_hostname]['consul_'+item+'_token'] not in tokens.stdout_lines
+  with_items:
+    - node
+    - nomad
+    - traefik
+    - vault
+
+- name: Create Token
+  include_tasks: write-tokens.yml
+  vars:
     acl_name: "{{ item.key }}"
-    acl_desc: "{{ item.value }}"
+    acl: "{{ item.value }}"
   with_dict:
-    node:  "Node Token"
-    nomad: "Nomad Service Token"
-    vault: "Vault Service Token"
-    traefik: "Traefik Catalog Service Token"
+    nomad:
+      descr: "Nomad token"
+    node:
+      descr: "Node Token"
+      policies:
+      - nomad-client
+      - nomad-server
+    vault:
+      descr: "Vault Service Token"
+    traefik:
+      descr: "Traefik Catalog Service Token"
+
 

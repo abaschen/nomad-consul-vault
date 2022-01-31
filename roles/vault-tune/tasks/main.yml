@@ -11,17 +11,21 @@
   register: vault_secrets
   retries: 5
   delay: 20
-  failed_when: "'Error reading policy named' in vault_secrets.stderr or 'local node not active but active cluster node not found' in vault_secrets.stderr"
+  until: vault_secrets is not failed
+  failed_when: vault_secrets.stdout == '' or vault_secrets.rc != 0 or 'Error listing secrets engines' in vault_secrets.stdout
   environment:
       VAULT_TOKEN: "{{ vault_root_token }}"
       VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
+
+- debug:
+    var: vault_secrets
 
 - name: Enable KV store
   shell: "vault secrets enable --path={{ item.path }} {{ item.cmd }}"
   environment:
     VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_ADDR: "http://127.0.0.1:{{ vault.ports.http}}"
-  when: vault_secrets.stdout | from_json | json_query( '\"' +item.path +'\".type' ) != item.type
+  when: vault_secrets.stdout | from_json | json_query( '"' +item.path +'".type' ) != item.type
   with_items:
   - { cmd: "pki", path: 'pki/', type: 'pki'}
   - { cmd: "pki", path: 'pki_int/', type: 'pki'}

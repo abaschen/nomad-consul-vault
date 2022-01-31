@@ -3,6 +3,10 @@
   # Attempt to help with long lines > 160 issues
   shell:
     cmd: consul acl policy list -token={{ consul_bootstrap_token }} -format=json | jq -r '.[] | select(.Name == "{{ acl_name }}") | .ID'
+  retries: 5
+  delay: 20
+  until: check_result is not failed
+  failed_when: "'Failed to retrieve the policy list' in check_result.stderr or check_result.rc != 0"
   environment:
     CONSUL_HTTP_SSL_VERIFY: "false"
   register: check_result
@@ -22,14 +26,5 @@
 
 - name: "Create ACL {{ acl_name }} policy"
   shell:
-    cmd: "consul acl policy {{ tern }} -name {{ acl_name }} -token='{{ consul_bootstrap_token }}' -rules -"
+    cmd: "consul acl policy {{ tern }} -name '{{ acl_name }}' -token={{ consul_bootstrap_token }} -rules -"
     stdin: "{{acl}}"
-  environment:
-    CONSUL_HTTP_TOKEN: consul_bootstrap_token
-
-- name: Read or create keys
-  include_role:
-    name: read-or-get-key
-  vars:
-    key_name: "consul_{{ acl_name }}_token"
-    cmd: "consul acl token create -description '{{ acl_desc }}' -token='{{ consul_bootstrap_token }}' -policy-name {{ acl_name }} -format=json | jq -r '.SecretID'"

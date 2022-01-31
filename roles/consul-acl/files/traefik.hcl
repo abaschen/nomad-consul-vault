@@ -5,3 +5,14 @@ key_prefix "traefik" {
 service "traefik" {
   policy = "write"
 }
+service "" {
+  policy = "write"
+}
+
+service_prefix "" {
+  policy = "read"
+}
+
+node_prefix "" {
+  policy = "read"
+}

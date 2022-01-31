@@ -1,0 +1,6 @@
+- name: Read or create keys
+  include_role:
+    name: read-or-get-key
+  vars:
+    key_name: "consul_{{ acl_name }}_token"
+    cmd: "consul acl token create -description '{{ acl.desc }}' -token='{{ consul_bootstrap_token }}' -policy-name {{  '\"'+(acl.policies | default(acl_name))+'\"' | join(' -policy-name')  }} -format=json | jq -r '.SecretID'"
