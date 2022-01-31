@@ -1,0 +1,17 @@
+[Unit]
+Description=Auto Unseal Vault
+After=vault.service
+Before=nomad.service
+Requires=vault.service
+
+[Service]
+Environment=VAULT_ADDR="http://127.0.0.1:{{ vault.ports.http}}"
+Environment=VAULT_KEY1={{vault_unseal_key_0}}
+Environment=VAULT_KEY2={{vault_unseal_key_1}}
+Environment=VAULT_KEY3={{vault_unseal_key_2}}
+Type=oneshot
+ExecStart=/root/auto-unseal.sh
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
