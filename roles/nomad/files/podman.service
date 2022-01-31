@@ -1,13 +1,13 @@
 [Unit]
 Description=Podman API Service
 Requires=podman.socket
-After=podman.socket
+Wants=network.target
+After=podman.socket network-online.target
 Documentation=man:podman-system-service(1)
 StartLimitIntervalSec=0
 
 [Service]
 Type=exec
-KillMode=process
 Environment=LOGGING="--log-level=info"
 ExecStart=/usr/bin/podman $LOGGING system service
 LimitNOFILE=500000
