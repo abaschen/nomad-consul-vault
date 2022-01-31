@@ -32,10 +32,12 @@ job "plex" {
         volumes = [
           "/mnt/tank/storage/config/plex:/config",
           "/mnt/tank/storage/config/certs:/certs",
-          "/mnt/tank/storage/media/videos:/data",
+          "/mnt/tank/storage/media/videos:/data/media/videos",
           "local/run:/etc/services.d/plex/run",
-          "local/claim:/etc/cont-init.d/40-chown-files",
+          "local/empty:/etc/cont-init.d/40-chown-files",
+          #"local/claim:/etc/cont-init.d/99-custom-scripts",
           "secret/cert.pem:/certs/certs.pem",
+          "secret/cert.key:/certs/certs.key",
         ]
         tmpfs = [
           "/transcode"
@@ -43,6 +45,13 @@ job "plex" {
         devices = [
           "/dev/dri"
         ]
+      }
+      template{
+        data = <<EOF
+#!/usr/bin/with-contenv bash
+echo Nothing to do
+EOF
+        destination = "local/empty"
       }
       template{
         data = <<EOF
@@ -55,20 +64,14 @@ exec s6-setuidgid root /usr/lib/plexmediaserver/Plex\ Media\ Server
 EOF
         destination = "local/run"
       }
-      template{
+
+      template {
         data = <<EOF
-#!/usr/bin/with-contenv bash
-
-PREFNAME="/config/Library/Application\ Support/Plex\ Media\ Server/Preferences.xml"
-sed -i "s/\/>/ PlexOnlineToken=\"{{ with secret "secrets/data/plex" }}{{ .Data.data.token }}{{ end }}\"\/>/g" "${PREFNAME}"
-sed -i "s/\/>/ customCertificateDomain=\"plex.ix.techunter.io\"\/>/g" "${PREFNAME}"
-sed -i "s/\/>/ customCertificateKey=\"{{ with secret "pki_int/issue/techunter-io" "common_name=plex.ix.techunter.io" "ttl=30d" }}{{ .Data.private_key | toJSON | replaceAll '\n' '' | replaceAll '-----BEGIN RSA PRIVATE KEY-----' '' | replaceAll '-----END RSA PRIVATE KEY-----' ''  }}{{ end }}\"\/>/g" "${PREFNAME}"
-sed -i "s/\/>/ customCertificatePath=\"/certs/cert.pem\"\/>/g" "${PREFNAME}"
-sed -i "s/\/>/ ManualPortMappingPort=\"32400\"\/>/g" "${PREFNAME}"
+{{ with secret "pki_int/issue/techunter-io" "common_name=plex.ix.techunter.io" "ttl=30d" }}{{ .Data.private_key }}{{ end }}
 EOF
-        destination = "local/claim"
-      }
 
+        destination = "secret/cert.key"
+      }
       template {
         data = <<EOH
 {{ with secret "pki_int/issue/techunter-io" "common_name=plex.ix.techunter.io" "ttl=30d" }}
@@ -94,9 +97,10 @@ EOF
           timeout  = "2s"
         }
         tags = [
-                  "traefik.enable=true",
-                  "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
-                  "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
+          "traefik.enable=true",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.rule=Host(`${NOMAD_TASK_NAME}.ix.techunter.io`)",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
         ]
       }
 

@@ -25,21 +25,18 @@ job "traefik" {
 
       config {
         cap_add=["CAP_NET_BIND_SERVICE", "NET_ADMIN"]
-        image        = "registry.connect.redhat.com/containous/traefikee:v2.1.0-ubi"
+        image        = "docker.io/traefik:latest"
         network_mode = "host"
         #privileged = "true"
         #ports = ["http","https","external", "api"]
         volumes = [
           "/etc/consul.d/consul-agent-ca.pem:/etc/ssl/consul/ca.crt",
-          "/mnt/tank/storage/config/certs:/etc/ssl/certs",
+          "secret/cert.pem:/etc/ssl/certs/ix.techunter.io.pem",
+          "secret/cert.key:/etc/ssl/certs/ix.techunter.io.key",
           "local/traefik.yml:/etc/traefik/traefik.yml"
         ]
       }
-      vault {
-        policies = ["traefik", "issue-techunter-io"]
-        change_mode   = "signal"
-        change_signal = "SIGINT"
-      }
+
       template {
         data = <<EOH
 entryPoints:
@@ -59,7 +56,6 @@ entryPoints:
             sans:
               - "*.techunter.io"
               - "ix.techunter.io"
-              - "plex.techunter.io"
 
   traefik:
     address: ":8081"
@@ -67,14 +63,10 @@ entryPoints:
 api:
   dashboard: true
   insecure: true
-certificatesResolvers:
-  resolverName:
-    vault:
-      url: "http://127.0.0.1:8200"
-      auth:
-        token: "{{ env "VAULT_TOKEN" }}"
-      enginePath: "pki"
-      role: "pki_manager"
+tls:
+  certificates:
+    - certFile: /certs/ix.techunter.io.pem
+      keyFile: /certs/ix.techunter.io.key
 providers:
   consulCatalog:
     prefix: traefik
@@ -94,6 +86,30 @@ log:
         change_mode   = "signal"
         change_signal = "SIGINT"
       }
+
+      template {
+        data = <<EOF
+{{ with secret "pki_int/issue/techunter-io" "common_name=*.ix.techunter.io" "ttl=30d" }}{{ .Data.private_key }}{{ end }}
+EOF
+
+        destination = "secret/cert.key"
+      }
+      template {
+        data = <<EOH
+{{ with secret "pki_int/issue/techunter-io" "common_name=*.ix.techunter.io" "ttl=30d" }}
+{{ .Data.certificate }}
+{{ end }}
+      EOH
+
+        destination = "secret/cert.pem"
+      }
+
+      vault {
+        policies      = ["traefik", "issue-techunter-io"]
+        change_mode   = "signal"
+        change_signal = "SIGHUP"
+      }
+
       service {
         name = "traefik"
 
@@ -104,6 +120,10 @@ log:
           interval = "30s"
           timeout  = "2s"
         }
+      }
+      resources {
+        cpu    = 2000
+        memory = 1024
       }
     }
   }

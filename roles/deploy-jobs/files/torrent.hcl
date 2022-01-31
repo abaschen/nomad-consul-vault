@@ -25,7 +25,7 @@ job "torrent-client" {
         volumes = [
             "/mnt/tank/storage/config/qbittorrent:/config/qBittorrent",
             "/mnt/tank/storage/download:/downloads",
-          "local/qBittorrent.conf:/config/qBittorrent/qBittorrent.conf"
+            "local/qBittorrent.conf:/config/qBittorrent/qBittorrent.conf"
         ]
       }
       vault {
@@ -146,6 +146,7 @@ AutoDownloader\SmartEpisodeFilter=s(\\d+)e(\\d+), (\\d+)x(\\d+), "(\\d{4}[.\\-]\
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.rule='Host(`${NOMAD_TASK_NAME}.ix.techunter.io`)'",
           "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
         ]
         check {
@@ -195,6 +196,7 @@ AutoDownloader\SmartEpisodeFilter=s(\\d+)e(\\d+), (\\d+)x(\\d+), "(\\d{4}[.\\-]\
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.rule='Host(`${NOMAD_TASK_NAME}.ix.techunter.io`)'",
           "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
         ]
 
@@ -291,6 +293,7 @@ exec s6-setuidgid abc mono --debug Sonarr.exe -nobrowser -data=/config
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.rule='Host(`${NOMAD_TASK_NAME}.ix.techunter.io`)'",
           "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
         ]
         check {
@@ -358,6 +361,7 @@ exec s6-setuidgid abc /app/radarr/bin/Radarr -nobrowser -data=/config
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.${NOMAD_TASK_NAME}.entrypoints=websecure",
+          "traefik.http.routers.${NOMAD_TASK_NAME}.rule='Host(`${NOMAD_TASK_NAME}.ix.techunter.io`)'",
           "traefik.http.routers.${NOMAD_TASK_NAME}.tls=true"
         ]
         check {

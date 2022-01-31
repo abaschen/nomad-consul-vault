@@ -42,6 +42,13 @@
     sysctl_set: yes
     state: present
     reload: yes
+- sysctl:
+    name:  net.ipv4.ip_unprivileged_port_start
+    value: '80'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
 
 - name: Add IP address of all hosts to all hosts
   lineinfile:
@@ -88,6 +95,8 @@
   copy:
     src: "delegate.conf"
     dest: "/etc/systemd/system/user@.service.d/delegate.conf"
-
+- name: Daemon Reload
+  systemd:
+    daemon_reload: true
 - name: Unconditionally reboot the machine with all defaults
   reboot: {}
